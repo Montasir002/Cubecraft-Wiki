@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel · CubeCraft Wiki</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2330;--card:#21262d;--border:#30363d;--green:#4ade80;--green-bg:#052e16;--blue:#60a5fa;--yellow:#fbbf24;--red:#f87171;--cyan:#22d3ee;--orange:#fb923c;--text:#e6edf3;--muted:#8b949e;--tab:#3b82f6;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;font-size:15px;}
+
+  /* LOGIN */
+  .login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;width:100%;max-width:380px;text-align:center;}
+  .login-icon{font-size:3rem;margin-bottom:12px;}
+  .login-title{font-size:1.4rem;font-weight:700;margin-bottom:6px;}
+  .login-sub{color:var(--muted);font-size:.85rem;margin-bottom:24px;}
+  .login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;text-align:left;}
+  .login-field label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .login-field input{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:.95rem;padding:11px 14px;outline:none;transition:border-color .15s;width:100%;}
+  .login-field input:focus{border-color:var(--tab);}
+  .login-btn{width:100%;background:var(--tab);color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:.95rem;font-weight:700;padding:12px;cursor:pointer;transition:opacity .15s;margin-top:4px;}
+  .login-btn:hover{opacity:.85;}
+  .login-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .login-err{color:var(--red);font-size:.82rem;margin-top:10px;padding:8px 12px;background:rgba(248,113,113,.1);border-radius:6px;display:none;}
+
+  /* INIT LOADER */
+  .init-loader{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px;color:var(--muted);font-size:.9rem;}
+
+  /* ADMIN LAYOUT */
+  .admin-wrap{display:none;}
+  .admin-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+  .admin-logo{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .admin-badge{background:var(--orange);color:#000;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;}
+  .admin-user{font-size:.78rem;color:var(--muted);margin-right:10px;}
+  .header-right{display:flex;align-items:center;gap:8px;}
+  .logout-btn{background:none;border:1px solid var(--border);color:var(--muted);font-family:'Inter',sans-serif;font-size:.8rem;padding:6px 14px;border-radius:6px;cursor:pointer;transition:color .15s,border-color .15s;}
+  .logout-btn:hover{color:var(--red);border-color:var(--red);}
+
+  .admin-page{max-width:900px;margin:0 auto;padding:28px 16px 60px;}
+  .admin-title{font-size:1.6rem;font-weight:700;margin-bottom:4px;}
+  .admin-sub{color:var(--muted);font-size:.88rem;margin-bottom:28px;}
+
+  /* PANEL SECTIONS */
+  .panel-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:24px;overflow:hidden;}
+  .panel-header{background:var(--card);padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .panel-header-icon{font-size:1.2rem;}
+  .panel-header-title{font-size:1rem;font-weight:700;}
+  .panel-body{padding:20px;}
+
+  /* FORM FIELDS */
+  .field-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+  .field-group label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .field-group select,.field-group input{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:.9rem;padding:10px 14px;outline:none;transition:border-color .15s;width:100%;}
+  .field-group select:focus,.field-group input:focus{border-color:var(--tab);}
+  .field-group select option{background:var(--surface);}
+  .coords-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  .hint-text{font-size:.75rem;color:var(--muted);margin-top:4px;}
+  .hint-text strong{color:var(--cyan);}
+
+  /* PREVIEW */
+  .preview-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:16px 0;display:none;}
+  .preview-box.show{display:block;}
+  .preview-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+  .preview-row{display:flex;gap:20px;flex-wrap:wrap;}
+  .preview-item{display:flex;flex-direction:column;gap:3px;}
+  .pk{font-size:.72rem;color:var(--muted);}
+  .pv{font-weight:700;font-size:.9rem;}
+  .pv.type-val{color:var(--blue);}
+  .pv.coord-val{color:var(--cyan);font-family:'Courier New',monospace;}
+  .pv.note-val{color:var(--yellow);}
+  .pv.order-val{color:var(--green);}
+
+  /* BUTTONS */
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
+  .btn{border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:.88rem;font-weight:700;padding:10px 20px;cursor:pointer;transition:opacity .15s;}
+  .btn:hover{opacity:.85;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-primary{background:var(--tab);color:#fff;}
+  .btn-success{background:var(--green);color:#052e16;}
+  .btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border);}
+
+  /* MESSAGES */
+  .op-msg{font-size:.82rem;padding:10px 14px;border-radius:6px;margin-top:12px;display:none;}
+  .op-msg.success{background:var(--green-bg);color:var(--green);display:block;}
+  .op-msg.error{background:rgba(248,113,113,.1);color:var(--red);display:block;}
+  .op-msg.info{background:rgba(96,165,250,.1);color:var(--blue);display:block;}
+
+  /* EXISTING TABLE */
+  .loc-table{width:100%;border-collapse:collapse;margin-top:16px;}
+  .loc-table th{text-align:left;padding:8px 12px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--card);}
+  .loc-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:.85rem;vertical-align:middle;}
+  .loc-table tr:last-child td{border-bottom:none;}
+  .loc-table tbody tr{background:var(--surface);transition:background .1s;}
+  .loc-table tbody tr:hover{background:var(--card);}
+  .coord-mono{font-family:'Courier New',monospace;color:var(--cyan);font-size:.85rem;}
+  .action-btns{display:flex;gap:6px;}
+  .btn-sm{border:none;border-radius:5px;font-family:'Inter',sans-serif;font-size:.75rem;font-weight:700;padding:5px 10px;cursor:pointer;transition:opacity .15s;}
+  .btn-sm:hover{opacity:.8;}
+  .btn-edit{background:rgba(96,165,250,.15);color:var(--blue);}
+  .btn-del{background:rgba(248,113,113,.15);color:var(--red);}
+
+  /* EDIT MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:480px;}
+  .modal-title{font-size:1.1rem;font-weight:700;margin-bottom:18px;}
+
+  /* SPINNER */
+  .spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--tab);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-row{padding:24px;text-align:center;color:var(--muted);font-size:.85rem;}
+
+  @media(max-width:520px){.coords-row{grid-template-columns:1fr 1fr;}.btn-row{flex-direction:column;}.preview-row{flex-direction:column;gap:10px;}}
+</style>
+</head>
+<body>
+
+<!-- INIT LOADER (shown while Firebase checks auth) -->
+<div class="init-loader" id="init-loader">
+  <div class="spinner"></div>
+  <div>Checking authentication...</div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="login-screen" style="display:none;">
+  <div class="login-box">
+    <div class="login-icon">🔐</div>
+    <div class="login-title">Admin Panel</div>
+    <div class="login-sub">CubeCraft Skyblock Wiki</div>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="pw-email" placeholder="admin@example.com" onkeydown="if(event.key==='Enter')document.getElementById('pw-pass').focus()">
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="pw-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-wrap" id="admin-wrap">
+  <header class="admin-header">
+    <div class="admin-logo">⛏ CubeCraft Wiki <span class="admin-badge">Admin</span></div>
+    <div class="header-right">
+      <span class="admin-user" id="admin-user-email"></span>
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="admin-page">
+    <div class="admin-title">Admin Panel</div>
+    <div class="admin-sub">Add, edit, or delete discoverable locations. All changes are live immediately on the public site.</div>
+
+    <!-- ADD NEW LOCATION -->
+    <div class="panel-section">
+      <div class="panel-header">
+        <span class="panel-header-icon">➕</span>
+        <span class="panel-header-title">Add New Location</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="field-group">
+          <label>Discoverable Type</label>
+          <select id="a-type" onchange="onTypeChange()">
+            <option value="">— Select type —</option>
+            <option value="lost_harvests">🌾 Lost Harvests (Plains Hub)</option>
+            <option value="sunstone_shards">☀️ Sunstone Shards (Desert Hub)</option>
+            <option value="amber_husks">🟠 Amber Husks (Unknown Hub)</option>
+            <option value="frostblooms">❄️ Frostblooms (Snowy Taiga Hub)</option>
+            <option value="acorns">🌰 Acorns (Oak Forest Hub)</option>
+            <option value="glowroot_pearls">✨ Glowroot Pearls (Jungle Hub)</option>
+            <option value="quest">📜 Quest Discoverables</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label>Serial Number (Order)</label>
+          <input type="number" id="a-order" min="1" placeholder="e.g. 10">
+          <div class="hint-text" id="order-hint">Select a type first to get the suggested next number.</div>
+        </div>
+
+        <div class="coords-row">
+          <div class="field-group"><label>X</label><input type="number" id="a-x" placeholder="2029"></div>
+          <div class="field-group"><label>Y</label><input type="number" id="a-y" placeholder="73"></div>
+          <div class="field-group"><label>Z</label><input type="number" id="a-z" placeholder="5380"></div>
+        </div>
+
+        <div class="field-group">
+          <label>Notes <span style="color:var(--muted);font-weight:400;text-transform:none">(optional)</span></label>
+          <input type="text" id="a-note" placeholder="e.g. On top of the tree, near the shrine...">
+        </div>
+
+        <!-- PREVIEW -->
+        <div class="preview-box" id="add-preview">
+          <div class="preview-label">Preview — confirm before saving</div>
+          <div class="preview-row">
+            <div class="preview-item"><span class="pk">Type</span><span class="pv type-val" id="prev-type">—</span></div>
+            <div class="preview-item"><span class="pk">Order #</span><span class="pv order-val" id="prev-order">—</span></div>
+            <div class="preview-item"><span class="pk">Coordinates</span><span class="pv coord-val" id="prev-coords">—</span></div>
+            <div class="preview-item"><span class="pk">Notes</span><span class="pv note-val" id="prev-note">—</span></div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="previewEntry()">👁 Preview</button>
+          <button class="btn btn-success" id="save-btn" onclick="saveEntry()" disabled>💾 Save to Firebase</button>
+        </div>
+        <div class="op-msg" id="add-msg"></div>
+      </div>
+    </div>
+
+    <!-- EXISTING LOCATIONS -->
+    <div class="panel-section">
+      <div class="panel-header">
+        <span class="panel-header-icon">📋</span>
+        <span class="panel-header-title">Existing Locations</span>
+      </div>
+      <div class="panel-body">
+        <div class="field-group">
+          <label>Filter by Type</label>
+          <select id="filter-type" onchange="loadExisting()">
+            <option value="lost_harvests">🌾 Lost Harvests</option>
+            <option value="sunstone_shards">☀️ Sunstone Shards</option>
+            <option value="amber_husks">🟠 Amber Husks</option>
+            <option value="frostblooms">❄️ Frostblooms</option>
+            <option value="acorns">🌰 Acorns</option>
+            <option value="glowroot_pearls">✨ Glowroot Pearls</option>
+            <option value="quest">📜 Quest</option>
+          </select>
+        </div>
+        <div id="existing-table"><div class="loading-row"><div class="spinner"></div></div></div>
+        <div class="op-msg" id="list-msg"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Location</div>
+    <input type="hidden" id="edit-doc-id">
+    <input type="hidden" id="edit-type">
+    <div class="field-group"><label>Order #</label><input type="number" id="edit-order" min="1"></div>
+    <div class="coords-row">
+      <div class="field-group"><label>X</label><input type="number" id="edit-x"></div>
+      <div class="field-group"><label>Y</label><input type="number" id="edit-y"></div>
+      <div class="field-group"><label>Z</label><input type="number" id="edit-z"></div>
+    </div>
+    <div class="field-group"><label>Notes</label><input type="text" id="edit-note"></div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn btn-primary" onclick="saveEdit()">💾 Save Changes</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
+    <div class="op-msg" id="edit-msg"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy }
+    from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:"AIzaSyC_ZkgcOfnn9fHRKowLz1o3s-jLSCz04Y4",
+    authDomain:"cubecraft-wiki.firebaseapp.com",
+    projectId:"cubecraft-wiki",
+    storageBucket:"cubecraft-wiki.firebasestorage.app",
+    messagingSenderId:"316389980903",
+    appId:"1:316389980903:web:0bf7be23525b587fc38042"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const TYPE_LABELS = {
+    lost_harvests:'🌾 Lost Harvests',
+    sunstone_shards:'☀️ Sunstone Shards',
+    amber_husks:'🟠 Amber Husks',
+    frostblooms:'❄️ Frostblooms',
+    acorns:'🌰 Acorns',
+    glowroot_pearls:'✨ Glowroot Pearls',
+    quest:'📜 Quest'
+  };
+
+  // ── AUTH STATE LISTENER ──
+  // Runs once on page load — hides loader and shows correct screen
+  onAuthStateChanged(auth, user => {
+    document.getElementById('init-loader').style.display = 'none';
+    if(user){
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-wrap').style.display = 'block';
+      document.getElementById('admin-user-email').textContent = user.email;
+      loadExisting();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('admin-wrap').style.display = 'none';
+    }
+  });
+
+  // ── LOGIN ──
+  window.doLogin = async function(){
+    const email = document.getElementById('pw-email').value.trim();
+    const pass = document.getElementById('pw-pass').value;
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('login-err');
+    err.style.display = 'none';
+    if(!email || !pass){ err.textContent='Please enter email and password.'; err.style.display='block'; return; }
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      // onAuthStateChanged will handle the UI switch
+    } catch(e) {
+      err.textContent = '❌ ' + friendlyAuthError(e.code);
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  };
+
+  // ── LOGOUT ──
+  window.doLogout = async function(){
+    await signOut(auth);
+    document.getElementById('pw-pass').value = '';
+  };
+
+  function friendlyAuthError(code){
+    if(code==='auth/invalid-credential'||code==='auth/wrong-password'||code==='auth/user-not-found') return 'Wrong email or password.';
+    if(code==='auth/too-many-requests') return 'Too many attempts. Try again later.';
+    if(code==='auth/invalid-email') return 'Invalid email address.';
+    return 'Login failed. Please try again.';
+  }
+
+  // ── TYPE CHANGE — suggest next order number ──
+  window.onTypeChange = async function(){
+    const type = document.getElementById('a-type').value;
+    const hint = document.getElementById('order-hint');
+    const orderInput = document.getElementById('a-order');
+    if(!type){ hint.innerHTML = 'Select a type first.'; return; }
+    hint.innerHTML = '<span class="spinner"></span> Checking...';
+    const snap = await getDocs(collection(db,'discoverables',type,'locations'));
+    const next = snap.size + 1;
+    orderInput.value = next;
+    hint.innerHTML = `Currently <strong>${snap.size}</strong> locations saved. Suggested next: <strong style="color:var(--cyan)">#${next}</strong>`;
+    document.getElementById('filter-type').value = type;
+    loadExisting();
+  };
+
+  // ── PREVIEW ──
+  window.previewEntry = function(){
+    const type = document.getElementById('a-type').value;
+    const order = document.getElementById('a-order').value;
+    const x = document.getElementById('a-x').value;
+    const y = document.getElementById('a-y').value;
+    const z = document.getElementById('a-z').value;
+    const note = document.getElementById('a-note').value.trim();
+    if(!type||!order||x===''||y===''||z===''){
+      showMsg('add-msg','error','Please fill in Type, Order #, and all 3 coordinates first.');
+      return;
+    }
+    document.getElementById('prev-type').textContent = TYPE_LABELS[type]||type;
+    document.getElementById('prev-order').textContent = '#'+order;
+    document.getElementById('prev-coords').textContent = `${x} / ${y} / ${z}`;
+    document.getElementById('prev-note').textContent = note||'(none)';
+    document.getElementById('add-preview').classList.add('show');
+    document.getElementById('save-btn').disabled = false;
+    showMsg('add-msg','info','Looks correct? Click Save to write to Firebase.');
+  };
+
+  // ── SAVE NEW ──
+  window.saveEntry = async function(){
+    const type = document.getElementById('a-type').value;
+    const order = parseInt(document.getElementById('a-order').value);
+    const x = parseInt(document.getElementById('a-x').value);
+    const y = parseInt(document.getElementById('a-y').value);
+    const z = parseInt(document.getElementById('a-z').value);
+    const note = document.getElementById('a-note').value.trim();
+    const btn = document.getElementById('save-btn');
+    btn.disabled=true; btn.textContent='Saving...';
+    try{
+      await addDoc(collection(db,'discoverables',type,'locations'),{order,x,y,z,note:note||''});
+      showMsg('add-msg','success',`✅ Saved! ${TYPE_LABELS[type]} #${order} → ${x}/${y}/${z}`);
+      document.getElementById('add-preview').classList.remove('show');
+      document.getElementById('a-x').value='';
+      document.getElementById('a-y').value='';
+      document.getElementById('a-z').value='';
+      document.getElementById('a-note').value='';
+      await onTypeChange();
+    }catch(e){
+      showMsg('add-msg','error','Failed to save: '+e.message);
+    }
+    btn.disabled=false; btn.textContent='💾 Save to Firebase';
+  };
+
+  // ── LOAD EXISTING ──
+  window.loadExisting = async function(){
+    const type = document.getElementById('filter-type').value;
+    const container = document.getElementById('existing-table');
+    container.innerHTML = '<div class="loading-row"><div class="spinner"></div></div>';
+    const col = collection(db,'discoverables',type,'locations');
+    let snap;
+    try{ snap = await getDocs(query(col,orderBy('order'))); }
+    catch{ snap = await getDocs(col); }
+    if(snap.empty){
+      container.innerHTML='<div class="loading-row" style="color:var(--muted)">No locations saved for this type yet.</div>';
+      return;
+    }
+    let rows='';
+    snap.forEach(d=>{
+      const data = d.data();
+      const noteEsc = (data.note||'').replace(/'/g,"\\'");
+      rows+=`<tr>
+        <td style="color:var(--muted);font-size:.8rem;width:40px">#${data.order||'?'}</td>
+        <td><span class="coord-mono">${data.x} / ${data.y} / ${data.z}</span></td>
+        <td style="color:var(--muted);font-size:.82rem">${data.note||'—'}</td>
+        <td><div class="action-btns">
+          <button class="btn-sm btn-edit" onclick="openEdit('${type}','${d.id}',${data.order},${data.x},${data.y},${data.z},'${noteEsc}')">Edit</button>
+          <button class="btn-sm btn-del" onclick="deleteEntry('${type}','${d.id}',${data.order})">Delete</button>
+        </div></td>
+      </tr>`;
+    });
+    container.innerHTML=`<table class="loc-table"><thead><tr><th>#</th><th>Coordinates (X/Y/Z)</th><th>Notes</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>`;
+  };
+
+  // ── OPEN EDIT MODAL ──
+  window.openEdit = function(type,docId,order,x,y,z,note){
+    document.getElementById('edit-doc-id').value = docId;
+    document.getElementById('edit-type').value = type;
+    document.getElementById('edit-order').value = order;
+    document.getElementById('edit-x').value = x;
+    document.getElementById('edit-y').value = y;
+    document.getElementById('edit-z').value = z;
+    document.getElementById('edit-note').value = note;
+    document.getElementById('edit-msg').className = 'op-msg';
+    document.getElementById('edit-modal').classList.add('show');
+  };
+
+  window.closeModal = function(){
+    document.getElementById('edit-modal').classList.remove('show');
+  };
+
+  // ── SAVE EDIT ──
+  window.saveEdit = async function(){
+    const type = document.getElementById('edit-type').value;
+    const docId = document.getElementById('edit-doc-id').value;
+    const order = parseInt(document.getElementById('edit-order').value);
+    const x = parseInt(document.getElementById('edit-x').value);
+    const y = parseInt(document.getElementById('edit-y').value);
+    const z = parseInt(document.getElementById('edit-z').value);
+    const note = document.getElementById('edit-note').value.trim();
+    try{
+      await updateDoc(doc(db,'discoverables',type,'locations',docId),{order,x,y,z,note:note||''});
+      showMsg('edit-msg','success','✅ Updated!');
+      setTimeout(()=>{ closeModal(); loadExisting(); }, 900);
+    }catch(e){
+      showMsg('edit-msg','error','Failed: '+e.message);
+    }
+  };
+
+  // ── DELETE ──
+  window.deleteEntry = async function(type,docId,order){
+    if(!confirm(`Delete location #${order} from ${TYPE_LABELS[type]}?\n\nThis cannot be undone.`)) return;
+    try{
+      await deleteDoc(doc(db,'discoverables',type,'locations',docId));
+      showMsg('list-msg','success',`✅ Location #${order} deleted.`);
+      loadExisting();
+    }catch(e){
+      showMsg('list-msg','error','Failed to delete: '+e.message);
+    }
+  };
+
+  function showMsg(id,type,text){
+    const el = document.getElementById(id);
+    el.className = 'op-msg '+type;
+    el.textContent = text;
+  }
+</script>
+</body>
+</html>
